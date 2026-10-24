@@ -600,7 +600,7 @@ const myTeam=()=>S.me&&S.teams[S.me.id]?Object.assign({id:S.me.id},S.teams[S.me.
    Incollate qui l'indirizzo del vostro Firebase Realtime Database, ad esempio
    'https://red-carpet-night-default-rtdb.europe-west1.firebasedatabase.app'
    Lasciato vuoto, fuori dalla piattaforma Claude l'app funziona solo su un telefono alla volta. */
-const FIREBASE_URL='';
+const FIREBASE_URL='https://festa-mattia-default-rtdb.firebaseio.com';
 /* backend: db condiviso oppure dispositivo singolo */
 function localBackend(){
   const KEY='rcn:data:v1';let data={};try{data=JSON.parse(ls.get(KEY)||'{}')}catch(e){}
