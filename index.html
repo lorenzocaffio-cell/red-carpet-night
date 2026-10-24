@@ -596,6 +596,11 @@ function recomputeAdmin(){S.admin=(ls.get('rcn:adm')||S.adminTok)===adminHashNow
 const teamList=()=>Object.entries(S.teams).map(([id,t])=>Object.assign({id},t)).sort((a,b)=>(a.n||0)-(b.n||0));
 const myTeam=()=>S.me&&S.teams[S.me.id]?Object.assign({id:S.me.id},S.teams[S.me.id]):null;
 
+/* ========= DATABASE CONDIVISO PER GITHUB PAGES =========
+   Incollate qui l'indirizzo del vostro Firebase Realtime Database, ad esempio
+   'https://red-carpet-night-default-rtdb.europe-west1.firebasedatabase.app'
+   Lasciato vuoto, fuori dalla piattaforma Claude l'app funziona solo su un telefono alla volta. */
+const FIREBASE_URL='';
 /* backend: db condiviso oppure dispositivo singolo */
 function localBackend(){
   const KEY='rcn:data:v1';let data={};try{data=JSON.parse(ls.get(KEY)||'{}')}catch(e){}
@@ -613,6 +618,29 @@ function dbBackend(db){
     set:(c,id,v)=>db.doc(c+'/'+id).set(v),
     async clear(c){const sn=await db.collection(c).get();const ids=sn.docs.map(d=>d.id);for(let i=0;i<ids.length;i+=10)await Promise.all(ids.slice(i,i+10).map(id=>db.doc(c+'/'+id).delete()))},
     del:(c,id)=>db.doc(c+'/'+id).delete()};
+}
+/* Firebase Realtime Database via REST + SSE: serve solo l'indirizzo del database (vedi README) */
+function fbBackend(base){
+  base=base.replace(/\/+$/,'');const cache={},subs={},opened={};
+  const emit=c=>(subs[c]||[]).forEach(f=>f(Object.entries(cache[c]||{})));
+  const setIn=(o,segs,val)=>{let x=o;for(let i=0;i<segs.length-1;i++){if(x[segs[i]]==null||typeof x[segs[i]]!=='object')x[segs[i]]={};x=x[segs[i]]}const k=segs[segs.length-1];if(val==null)delete x[k];else x[k]=val};
+  const apply=(c,path,data,merge)=>{
+    const segs=path.split('/').filter(Boolean);
+    if(merge){Object.keys(data||{}).forEach(k=>apply(c,path.replace(/\/$/,'')+'/'+k,data[k],false));return}
+    if(!segs.length){cache[c]=data&&typeof data==='object'?data:{};return}
+    cache[c]=cache[c]||{};setIn(cache[c],segs,data);
+  };
+  const open=c=>{if(opened[c])return;opened[c]=true;
+    const es=new EventSource(base+'/'+c+'.json');
+    ['put','patch'].forEach(t=>es.addEventListener(t,ev=>{try{const m=JSON.parse(ev.data);apply(c,m.path||'/',m.data,t==='patch');emit(c)}catch(e){}}));
+  };
+  const url=(c,id)=>base+'/'+c+(id?'/'+encodeURIComponent(id):'')+'.json';
+  const send=async(m,u,body)=>{const r=await fetch(u,{method:m,body});if(!r.ok)throw new Error('db '+r.status)};
+  return{mode:'db',
+    sub(c,f){(subs[c]=subs[c]||[]).push(f);if(cache[c])setTimeout(()=>f(Object.entries(cache[c])),0);open(c)},
+    async set(c,id,v){(cache[c]=cache[c]||{})[id]=clone(v);emit(c);await send('PUT',url(c,id),JSON.stringify(v))},
+    async del(c,id){if(cache[c])delete cache[c][id];emit(c);await send('DELETE',url(c,id))},
+    async clear(c){cache[c]={};emit(c);await send('DELETE',url(c))}};
 }
 const pend={votes:false,picks:false}, ver={votes:0,picks:0}, timers={};
 let chain=Promise.resolve(), missCount=0;
@@ -1428,7 +1456,7 @@ async function init(){
     db=res[0];user=res[1];D=res[2];
   }
   if(user){try{S.owner=!!(await user.canEdit());const w=await user.can('data.write');if(w===false)S.canWrite=false}catch(e){}}
-  B=db?dbBackend(db):localBackend();S.mode=B.mode;
+  B=db?dbBackend(db):(FIREBASE_URL?fbBackend(FIREBASE_URL):localBackend());S.mode=B.mode;
   updateStrip();recomputeAdmin();
   ['teams','photos','votes','picks','config'].forEach(c=>B.sub(c,en=>onCol(c,en)));
   setTimeout(()=>{if(!S.loaded.teams){S.loaded.teams=true;render()}},4000);

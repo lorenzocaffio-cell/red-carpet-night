@@ -1,25 +1,24 @@
 # Red Carpet Night
 
-Web app per la festa di compleanno di Mattia: festa a tema a coppie con premiazione in stile Oscar.
-Iscrizione delle coppie, carte giocatore, votazioni Likert, pronostici, foto della serata e cerimonia finale sincronizzata.
+Web app per la festa di Mattia: coppie, carte giocatore, voti, pronostici, foto e cerimonia in stile Oscar.
+Un solo file: `index.html`. Admin: codice iniziale `1221` (icona chiave).
 
-È un unico file: `index.html`. Nessuna build.
+## 1. Database condiviso (Firebase, gratis, 3 minuti)
+1. Vai su https://console.firebase.google.com → **Aggiungi progetto** (nome a piacere, Analytics disattivato).
+2. Menu **Build → Realtime Database → Crea database**. Scegli la regione e **modalità test**.
+3. Scheda **Regole**: incolla e pubblica
+   ```
+   { "rules": { ".read": true, ".write": true } }
+   ```
+4. Copia l'indirizzo in cima alla scheda **Dati**, tipo `https://NOME-default-rtdb.europe-west1.firebasedatabase.app`.
+5. Apri `index.html`, cerca `const FIREBASE_URL=''` e metti l'indirizzo tra gli apici (senza `/` finale).
 
-## Pubblicarlo su GitHub Pages
-1. Crea un repository (es. `red-carpet-night`) e carica `index.html` e `.nojekyll`.
-2. Settings → Pages → Source: *Deploy from a branch* → `main` / `(root)`.
-3. Dopo un minuto il sito è su `https://<tuo-utente>.github.io/red-carpet-night/`.
+## 2. Pubblicare su GitHub Pages
+1. Nuovo repository pubblico, carica `index.html`, `.nojekyll`, `README.md`.
+2. Settings → Pages → Deploy from a branch → `main` / `(root)`.
+3. Il link è `https://<utente>.github.io/<repository>/`: condividilo con gli ospiti.
 
-## Attenzione: dati condivisi
-Sulla piattaforma Claude (dove è nato) i dati sono condivisi in tempo reale tra tutti i telefoni.
-Fuori da lì (GitHub Pages incluso) l'app usa il **localStorage**: ogni telefono vede **solo i propri dati**,
-quindi iscrizioni, voti e cerimonia NON si sincronizzano tra gli ospiti.
-Per usare GitHub Pages serve un database condiviso (es. Firebase Firestore o Supabase): va scritto un adattatore
-al posto di `localBackend()` nel codice (stessa interfaccia: `sub`, `set`, `del`, `clear`).
-
-## Admin
-Codice iniziale: `1221` (cambiabile dalla Regia, icona chiave).
-
-## Musica
-Dalla Regia si carica il file audio di Firework: resta salvato nel browser del dispositivo e suona solo lì.
-Il file non è incluso nel repository (copyright).
+## Note
+- Le regole aperte vanno bene per una serata: dopo la festa elimina il progetto Firebase.
+- La musica (Firework) si carica dalla Regia e resta salvata nel browser del dispositivo che la riproduce; non è nel repository.
+- Se `FIREBASE_URL` è vuoto, l'app funziona ma ogni telefono vede solo i propri dati.
